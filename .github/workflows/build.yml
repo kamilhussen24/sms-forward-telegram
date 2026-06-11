@@ -41,7 +41,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sms-relay-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       # ── Release ───────────────────────────────────────────────────
@@ -51,7 +51,7 @@ jobs:
 
       - name: 🔑 Decode Keystore
         if: inputs.build_type == 'release'
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore/release.keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore/android.keystore
 
       - name: 🏗️ Build Release APK
         if: inputs.build_type == 'release'
@@ -66,5 +66,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sms-relay-release
-          path: app/build/outputs/apk/release/app-release.apk
+          path: app/build/outputs/apk/release/*.apk
           retention-days: 30

@@ -141,12 +141,10 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             if (!hasPermissions()) { showPermissionDialog(); return@setOnClickListener }
-
-            // Network warning on start
             if (!NetworkMonitor.isAvailable(this)) {
                 AlertDialog.Builder(this)
                     .setTitle("⚠️ No Internet Connection")
-                    .setMessage("You are starting without internet. SMS Relay will forward messages once the connection is restored.")
+                    .setMessage("You are starting without internet. SMS Relay will forward messages once connection is restored.")
                     .setPositiveButton("Start Anyway") { _, _ -> startForwarding(token, chatId) }
                     .setNegativeButton("Cancel", null).show()
                 return@setOnClickListener
@@ -155,7 +153,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnStop.setOnClickListener {
-            startService(Intent(this, SmsForwarderService::class.java).apply { action = SmsForwarderService.ACTION_STOP })
+            startService(Intent(this, SmsForwarderService::class.java).apply {
+                action = SmsForwarderService.ACTION_STOP
+            })
         }
 
         binding.btnClearLog.setOnClickListener {
@@ -174,7 +174,9 @@ class MainActivity : AppCompatActivity() {
                 Snackbar.make(binding.root, "⚠️ No internet connection", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val msg = "✅ <b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\n🕐 ${java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())}"
+            val msg = "✅ <b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\n🕐 ${
+                java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())
+            }"
             TelegramSender.send(token, chatId, msg) { success ->
                 runOnUiThread {
                     Snackbar.make(binding.root,
@@ -205,13 +207,11 @@ class MainActivity : AppCompatActivity() {
     private fun updateUI() {
         val active = Prefs.isActive(this)
         val online = NetworkMonitor.isAvailable(this)
-        binding.statusDot.setBackgroundResource(
-            when {
-                !active -> R.drawable.dot_red
-                !online -> R.drawable.dot_yellow
-                else -> R.drawable.dot_green
-            }
-        )
+        binding.statusDot.setBackgroundResource(when {
+            !active -> R.drawable.dot_red
+            !online -> R.drawable.dot_yellow
+            else -> R.drawable.dot_green
+        })
         binding.tvStatus.text = when {
             !active -> "Forwarding Stopped"
             !online -> "⚠️ No Network — Waiting..."
@@ -227,8 +227,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateNetworkUI(online: Boolean) {
-        val active = Prefs.isActive(this)
-        if (!active) return
+        if (!Prefs.isActive(this)) return
         binding.statusDot.setBackgroundResource(if (online) R.drawable.dot_green else R.drawable.dot_yellow)
         binding.tvStatus.text = if (online) "Forwarding Active" else "⚠️ No Network — Waiting..."
         binding.tvStatus.setTextColor(ContextCompat.getColor(this,
@@ -242,12 +241,21 @@ class MainActivity : AppCompatActivity() {
         binding.tvLogCount.text = "${logs.size}/20"
     }
 
+    private fun registerReceiverCompat(receiver: BroadcastReceiver, filter: IntentFilter) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(receiver, filter)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        registerReceiver(statusReceiver, IntentFilter("com.kamildex.smsrelay.STATUS_CHANGED"))
-        registerReceiver(smsReceiver, IntentFilter("com.kamildex.smsrelay.SMS_FORWARDED"))
-        registerReceiver(networkReceiver, IntentFilter("com.kamildex.smsrelay.NETWORK_CHANGED"))
-        updateUI(); refreshLog()
+        registerReceiverCompat(statusReceiver, IntentFilter("com.kamildex.smsrelay.STATUS_CHANGED"))
+        registerReceiverCompat(smsReceiver, IntentFilter("com.kamildex.smsrelay.SMS_FORWARDED"))
+        registerReceiverCompat(networkReceiver, IntentFilter("com.kamildex.smsrelay.NETWORK_CHANGED"))
+        updateUI()
+        refreshLog()
     }
 
     override fun onPause() {

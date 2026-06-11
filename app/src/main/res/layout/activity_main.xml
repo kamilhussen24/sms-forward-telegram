@@ -246,6 +246,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
                     android:minWidth="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
                     android:text="Clear"

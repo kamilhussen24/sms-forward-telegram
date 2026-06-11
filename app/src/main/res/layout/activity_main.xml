@@ -58,9 +58,13 @@
                         android:textSize="14sp" android:textStyle="bold" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnTest"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content" android:layout_height="36dp"
-                        android:text="Test" android:textSize="12sp" app:cornerRadius="8dp" />
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="Test"
+                        android:textSize="12sp"
+                        app:cornerRadius="8dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -244,7 +248,6 @@
                     android:textSize="12sp" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnClearLog"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
                     android:insetTop="0dp"

@@ -10,6 +10,7 @@ object Prefs {
     private const val KEY_KEYWORDS = "keywords"
     private const val KEY_SENDERS = "senders"
     private const val KEY_ACTIVE = "is_active"
+    private const val KEY_FORWARD_ALL = "forward_all"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
@@ -19,6 +20,7 @@ object Prefs {
     fun getKeywords(context: Context) = prefs(context).getString(KEY_KEYWORDS, "") ?: ""
     fun getSenders(context: Context) = prefs(context).getString(KEY_SENDERS, "") ?: ""
     fun isActive(context: Context) = prefs(context).getBoolean(KEY_ACTIVE, false)
+    fun isForwardAll(context: Context) = prefs(context).getBoolean(KEY_FORWARD_ALL, false)
 
     fun save(context: Context, token: String, chatId: String, keywords: String, senders: String) {
         prefs(context).edit().apply {
@@ -32,5 +34,9 @@ object Prefs {
 
     fun setActive(context: Context, active: Boolean) {
         prefs(context).edit().putBoolean(KEY_ACTIVE, active).apply()
+    }
+
+    fun setForwardAll(context: Context, all: Boolean) {
+        prefs(context).edit().putBoolean(KEY_FORWARD_ALL, all).apply()
     }
 }

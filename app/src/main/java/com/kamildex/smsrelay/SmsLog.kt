@@ -16,7 +16,7 @@ data class SmsEntry(
 
 object SmsLog {
     private const val KEY_LOG = "sms_log"
-    private const val MAX_ENTRIES = 50
+    private const val MAX_ENTRIES = 20  // Max 20 entries
 
     private fun prefs(context: Context) =
         context.getSharedPreferences("sms_relay_prefs", Context.MODE_PRIVATE)
@@ -37,32 +37,35 @@ object SmsLog {
         val existing = getAll(context)
         val array = JSONArray()
         array.put(entry)
-        existing.take(MAX_ENTRIES - 1).forEach { array.put(JSONObject().apply {
-            put("sender", it.sender)
-            put("message", it.message)
-            put("time", it.time)
-            put("date", it.date)
-            put("forwarded", it.forwarded)
-        }) }
+        // Keep only latest MAX_ENTRIES - 1 entries
+        existing.take(MAX_ENTRIES - 1).forEach { item ->
+            array.put(JSONObject().apply {
+                put("sender", item.sender)
+                put("message", item.message)
+                put("time", item.time)
+                put("date", item.date)
+                put("forwarded", item.forwarded)
+            })
+        }
 
         prefs(context).edit().putString(KEY_LOG, array.toString()).apply()
     }
 
     fun getAll(context: Context): List<SmsEntry> {
         val json = prefs(context).getString(KEY_LOG, "[]") ?: "[]"
-        val array = JSONArray(json)
-        val list = mutableListOf<SmsEntry>()
-        for (i in 0 until array.length()) {
-            val obj = array.getJSONObject(i)
-            list.add(SmsEntry(
-                sender = obj.getString("sender"),
-                message = obj.getString("message"),
-                time = obj.getString("time"),
-                date = obj.getString("date"),
-                forwarded = obj.getBoolean("forwarded")
-            ))
-        }
-        return list
+        return try {
+            val array = JSONArray(json)
+            (0 until array.length()).map { i ->
+                val obj = array.getJSONObject(i)
+                SmsEntry(
+                    sender = obj.getString("sender"),
+                    message = obj.getString("message"),
+                    time = obj.getString("time"),
+                    date = obj.getString("date"),
+                    forwarded = obj.getBoolean("forwarded")
+                )
+            }
+        } catch (e: Exception) { emptyList() }
     }
 
     fun clear(context: Context) {

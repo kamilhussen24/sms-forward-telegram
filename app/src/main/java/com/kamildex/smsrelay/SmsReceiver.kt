@@ -16,7 +16,6 @@ class SmsReceiver : BroadcastReceiver() {
         messages.forEach { sms ->
             val sender = sms.displayOriginatingAddress ?: "Unknown"
             val body = sms.messageBody ?: ""
-
             if (shouldForward(context, sender, body)) {
                 forwardToTelegram(context, sender, body)
             }
@@ -24,18 +23,19 @@ class SmsReceiver : BroadcastReceiver() {
     }
 
     private fun shouldForward(context: Context, sender: String, body: String): Boolean {
+        // Forward All mode
+        if (Prefs.isForwardAll(context)) return true
+
         val keywords = Prefs.getKeywords(context)
             .split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
-
         val senders = Prefs.getSenders(context)
             .split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
 
+        // If both empty — forward all
         if (keywords.isEmpty() && senders.isEmpty()) return true
 
-        val senderMatch = senders.any { sender.lowercase().contains(it) }
-        val keywordMatch = keywords.any { body.lowercase().contains(it) }
-
-        return senderMatch || keywordMatch
+        return senders.any { sender.lowercase().contains(it) } ||
+               keywords.any { body.lowercase().contains(it) }
     }
 
     private fun forwardToTelegram(context: Context, sender: String, body: String) {
@@ -43,7 +43,6 @@ class SmsReceiver : BroadcastReceiver() {
         val chatId = Prefs.getChatId(context)
         if (token.isEmpty() || chatId.isEmpty()) return
 
-        // Extract OTP from message
         val otpRegex = Regex("\\b\\d{4,8}\\b")
         val otp = otpRegex.find(body)?.value
 
@@ -68,8 +67,7 @@ class SmsReceiver : BroadcastReceiver() {
 
         TelegramSender.send(token, chatId, message) { success ->
             SmsLog.add(context, sender, body, success)
-            Log.d("SmsReceiver", "Forward ${if (success) "success" else "failed"}: $sender")
-            // Notify UI
+            Log.d("SmsReceiver", "Forward ${if (success) "✅" else "❌"}: $sender")
             context.sendBroadcast(Intent("com.kamildex.smsrelay.SMS_FORWARDED"))
         }
     }

@@ -7,11 +7,8 @@ import androidx.core.content.ContextCompat
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            if (Prefs.isActive(context)) {
-                val serviceIntent = Intent(context, SmsForwarderService::class.java)
-                ContextCompat.startForegroundService(context, serviceIntent)
-            }
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED && Prefs.isActive(context)) {
+            ContextCompat.startForegroundService(context, Intent(context, SmsForwarderService::class.java))
         }
     }
 }

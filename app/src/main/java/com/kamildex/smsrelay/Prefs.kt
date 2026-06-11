@@ -1,42 +1,29 @@
 package com.kamildex.smsrelay
 
 import android.content.Context
-import android.content.SharedPreferences
 
 object Prefs {
     private const val NAME = "sms_relay_prefs"
-    private const val KEY_TOKEN = "bot_token"
-    private const val KEY_CHAT_ID = "chat_id"
-    private const val KEY_KEYWORDS = "keywords"
-    private const val KEY_SENDERS = "senders"
-    private const val KEY_ACTIVE = "is_active"
-    private const val KEY_FORWARD_ALL = "forward_all"
 
-    private fun prefs(context: Context): SharedPreferences =
-        context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
+    private fun p(c: Context) = c.getSharedPreferences(NAME, Context.MODE_PRIVATE)
 
-    fun getBotToken(context: Context) = prefs(context).getString(KEY_TOKEN, "") ?: ""
-    fun getChatId(context: Context) = prefs(context).getString(KEY_CHAT_ID, "") ?: ""
-    fun getKeywords(context: Context) = prefs(context).getString(KEY_KEYWORDS, "") ?: ""
-    fun getSenders(context: Context) = prefs(context).getString(KEY_SENDERS, "") ?: ""
-    fun isActive(context: Context) = prefs(context).getBoolean(KEY_ACTIVE, false)
-    fun isForwardAll(context: Context) = prefs(context).getBoolean(KEY_FORWARD_ALL, false)
+    fun getBotToken(c: Context) = p(c).getString("token", "") ?: ""
+    fun getChatId(c: Context) = p(c).getString("chat_id", "") ?: ""
+    fun getKeywords(c: Context) = p(c).getString("keywords", "") ?: ""
+    fun getSenders(c: Context) = p(c).getString("senders", "") ?: ""
+    fun isActive(c: Context) = p(c).getBoolean("active", false)
+    fun isForwardAll(c: Context) = p(c).getBoolean("forward_all", false)
 
-    fun save(context: Context, token: String, chatId: String, keywords: String, senders: String) {
-        prefs(context).edit().apply {
-            putString(KEY_TOKEN, token)
-            putString(KEY_CHAT_ID, chatId)
-            putString(KEY_KEYWORDS, keywords)
-            putString(KEY_SENDERS, senders)
+    fun save(c: Context, token: String, chatId: String, keywords: String, senders: String) {
+        p(c).edit().apply {
+            putString("token", token)
+            putString("chat_id", chatId)
+            putString("keywords", keywords)
+            putString("senders", senders)
             apply()
         }
     }
 
-    fun setActive(context: Context, active: Boolean) {
-        prefs(context).edit().putBoolean(KEY_ACTIVE, active).apply()
-    }
-
-    fun setForwardAll(context: Context, all: Boolean) {
-        prefs(context).edit().putBoolean(KEY_FORWARD_ALL, all).apply()
-    }
+    fun setActive(c: Context, active: Boolean) = p(c).edit().putBoolean("active", active).apply()
+    fun setForwardAll(c: Context, all: Boolean) = p(c).edit().putBoolean("forward_all", all).apply()
 }

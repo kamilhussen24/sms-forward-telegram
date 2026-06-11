@@ -175,7 +175,7 @@
                         android:orientation="vertical">
 
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Keywords" android:textColor="@color/text_secondary"
+                            android:text="Senders" android:textColor="@color/text_secondary"
                             android:textSize="12sp" android:layout_marginBottom="4dp" />
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -183,25 +183,25 @@
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             app:boxCornerRadiusBottomEnd="10dp" app:boxCornerRadiusBottomStart="10dp"
                             app:boxCornerRadiusTopEnd="10dp" app:boxCornerRadiusTopStart="10dp"
-                            app:helperText="e.g. OTP, BANK, BKASH">
+                            app:helperText="e.g. GP, DBBL, 01712345678">
                             <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etKeywords" android:layout_width="match_parent"
-                                android:layout_height="wrap_content" android:hint="OTP, BANK, BKASH"
+                                android:id="@+id/etSenders" android:layout_width="match_parent"
+                                android:layout_height="wrap_content" android:hint="GP, DBBL, BKASH"
                                 android:inputType="text" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Senders" android:textColor="@color/text_secondary"
+                            android:text="Keywords" android:textColor="@color/text_secondary"
                             android:textSize="12sp" android:layout_marginBottom="4dp" />
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="match_parent" android:layout_height="wrap_content"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             app:boxCornerRadiusBottomEnd="10dp" app:boxCornerRadiusBottomStart="10dp"
                             app:boxCornerRadiusTopEnd="10dp" app:boxCornerRadiusTopStart="10dp"
-                            app:helperText="e.g. GP, DBBL, 01712345678">
+                            app:helperText="e.g. OTP, BANK, BKASH">
                             <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etSenders" android:layout_width="match_parent"
-                                android:layout_height="wrap_content" android:hint="GP, DBBL, BKASH"
+                                android:id="@+id/etKeywords" android:layout_width="match_parent"
+                                android:layout_height="wrap_content" android:hint="OTP, BANK, BKASH"
                                 android:inputType="text" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>

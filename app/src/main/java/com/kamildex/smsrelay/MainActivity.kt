@@ -31,19 +31,43 @@ class MainActivity : AppCompatActivity() {
     private val smsReceiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context?, i: Intent?) { refreshLog() }
     }
+    private val networkReceiver = object : BroadcastReceiver() {
+        override fun onReceive(c: Context?, i: Intent?) {
+            val online = i?.getBooleanExtra("online", true) ?: true
+            updateNetworkUI(online)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupToolbar()
         setupRecyclerView()
         loadSettings()
         updateUI()
         setupListeners()
-        setupToolbar()
 
         if (!hasPermissions()) showPermissionDialog()
+    }
+
+    private fun setupToolbar() {
+        binding.toolbar.setOnMenuItemClickListener { item ->
+            if (item.itemId == R.id.action_about) { showAboutDialog(); true } else false
+        }
+    }
+
+    private fun showAboutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("About SMS Relay")
+            .setMessage(
+                "SMS Relay\n\n" +
+                "Automatically forwards incoming SMS to Telegram.\n\n" +
+                "Developed by Kamil Hussen\n\n" +
+                "Version 1.0.0"
+            )
+            .setPositiveButton("OK", null).show()
     }
 
     private fun hasPermissions() =
@@ -68,15 +92,12 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(rc: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(rc, perms, results)
         if (rc == 100) {
-            if (results.all { it == PackageManager.PERMISSION_GRANTED }) {
-                askBatteryOptimization()
-            } else {
-                Snackbar.make(binding.root, "Permissions denied. App may not work.", Snackbar.LENGTH_LONG)
-                    .setAction("Settings") {
-                        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            .apply { data = Uri.fromParts("package", packageName, null) })
-                    }.show()
-            }
+            if (results.all { it == PackageManager.PERMISSION_GRANTED }) askBatteryOptimization()
+            else Snackbar.make(binding.root, "Permissions denied. App may not work.", Snackbar.LENGTH_LONG)
+                .setAction("Settings") {
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .apply { data = Uri.fromParts("package", packageName, null) })
+                }.show()
         }
     }
 
@@ -86,7 +107,7 @@ class MainActivity : AppCompatActivity() {
             if (!pm.isIgnoringBatteryOptimizations(packageName)) {
                 AlertDialog.Builder(this)
                     .setTitle("Battery Optimization")
-                    .setMessage("Disable battery optimization to ensure SMS Relay works in background even when screen is off.")
+                    .setMessage("Disable battery optimization to ensure SMS Relay works in background.")
                     .setPositiveButton("Disable") { _, _ ->
                         startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                             .apply { data = Uri.parse("package:$packageName") })
@@ -94,29 +115,6 @@ class MainActivity : AppCompatActivity() {
                     .setNegativeButton("Skip", null).show()
             }
         }
-    }
-
-    private fun setupToolbar() {
-        val toolbar = binding.toolbar
-        toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_about) {
-                showAboutDialog()
-                true
-            } else false
-        }
-    }
-
-    private fun showAboutDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("About SMS Relay")
-            .setMessage(
-                "SMS Relay\n\n" +
-                "Automatically forwards incoming SMS to Telegram.\n\n" +
-                "Developed by Kamil Hussen\n\n" +
-                "Version 1.0.0"
-            )
-            .setPositiveButton("OK", null)
-            .show()
     }
 
     private fun setupRecyclerView() {
@@ -143,10 +141,17 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             if (!hasPermissions()) { showPermissionDialog(); return@setOnClickListener }
-            Prefs.save(this, token, chatId,
-                binding.etKeywords.text.toString().trim(),
-                binding.etSenders.text.toString().trim())
-            ContextCompat.startForegroundService(this, Intent(this, SmsForwarderService::class.java))
+
+            // Network warning on start
+            if (!NetworkMonitor.isAvailable(this)) {
+                AlertDialog.Builder(this)
+                    .setTitle("⚠️ No Internet Connection")
+                    .setMessage("You are starting without internet. SMS Relay will forward messages once the connection is restored.")
+                    .setPositiveButton("Start Anyway") { _, _ -> startForwarding(token, chatId) }
+                    .setNegativeButton("Cancel", null).show()
+                return@setOnClickListener
+            }
+            startForwarding(token, chatId)
         }
 
         binding.btnStop.setOnClickListener {
@@ -165,6 +170,10 @@ class MainActivity : AppCompatActivity() {
                 Snackbar.make(binding.root, "Enter Bot Token and Chat ID first", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (!NetworkMonitor.isAvailable(this)) {
+                Snackbar.make(binding.root, "⚠️ No internet connection", Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val msg = "✅ <b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\n🕐 ${java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())}"
             TelegramSender.send(token, chatId, msg) { success ->
                 runOnUiThread {
@@ -174,6 +183,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun startForwarding(token: String, chatId: String) {
+        Prefs.save(this, token, chatId,
+            binding.etKeywords.text.toString().trim(),
+            binding.etSenders.text.toString().trim())
+        ContextCompat.startForegroundService(this, Intent(this, SmsForwarderService::class.java))
     }
 
     private fun loadSettings() {
@@ -188,11 +204,35 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUI() {
         val active = Prefs.isActive(this)
-        binding.statusDot.setBackgroundResource(if (active) R.drawable.dot_green else R.drawable.dot_red)
-        binding.tvStatus.text = if (active) "Forwarding Active" else "Forwarding Stopped"
-        binding.tvStatus.setTextColor(ContextCompat.getColor(this, if (active) R.color.green else R.color.red))
+        val online = NetworkMonitor.isAvailable(this)
+        binding.statusDot.setBackgroundResource(
+            when {
+                !active -> R.drawable.dot_red
+                !online -> R.drawable.dot_yellow
+                else -> R.drawable.dot_green
+            }
+        )
+        binding.tvStatus.text = when {
+            !active -> "Forwarding Stopped"
+            !online -> "⚠️ No Network — Waiting..."
+            else -> "Forwarding Active"
+        }
+        binding.tvStatus.setTextColor(ContextCompat.getColor(this, when {
+            !active -> R.color.red
+            !online -> R.color.yellow
+            else -> R.color.green
+        }))
         binding.btnStart.visibility = if (active) View.GONE else View.VISIBLE
         binding.btnStop.visibility = if (active) View.VISIBLE else View.GONE
+    }
+
+    private fun updateNetworkUI(online: Boolean) {
+        val active = Prefs.isActive(this)
+        if (!active) return
+        binding.statusDot.setBackgroundResource(if (online) R.drawable.dot_green else R.drawable.dot_yellow)
+        binding.tvStatus.text = if (online) "Forwarding Active" else "⚠️ No Network — Waiting..."
+        binding.tvStatus.setTextColor(ContextCompat.getColor(this,
+            if (online) R.color.green else R.color.yellow))
     }
 
     private fun refreshLog() {
@@ -206,11 +246,16 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         registerReceiver(statusReceiver, IntentFilter("com.kamildex.smsrelay.STATUS_CHANGED"))
         registerReceiver(smsReceiver, IntentFilter("com.kamildex.smsrelay.SMS_FORWARDED"))
+        registerReceiver(networkReceiver, IntentFilter("com.kamildex.smsrelay.NETWORK_CHANGED"))
         updateUI(); refreshLog()
     }
 
     override fun onPause() {
         super.onPause()
-        try { unregisterReceiver(statusReceiver); unregisterReceiver(smsReceiver) } catch (e: Exception) {}
+        try {
+            unregisterReceiver(statusReceiver)
+            unregisterReceiver(smsReceiver)
+            unregisterReceiver(networkReceiver)
+        } catch (e: Exception) {}
     }
 }

@@ -242,17 +242,15 @@
                     android:textSize="12sp" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnClearLog"
-                    style="@style/Widget.Material3.Button.TextButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="36dp"
                     android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="0dp"
-                    android:paddingTop="0dp"
-                    android:paddingBottom="0dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:text="Clear"
-                    android:textSize="12sp" />
+                    android:textSize="13sp"
+                    app:cornerRadius="8dp" />
             </LinearLayout>
 
             <TextView android:id="@+id/tvEmptyLog"

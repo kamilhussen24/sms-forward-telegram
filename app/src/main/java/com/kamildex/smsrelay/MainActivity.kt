@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         loadSettings()
         updateUI()
         setupListeners()
+        setupToolbar()
 
         if (!hasPermissions()) showPermissionDialog()
     }
@@ -93,6 +94,31 @@ class MainActivity : AppCompatActivity() {
                     .setNegativeButton("Skip", null).show()
             }
         }
+    }
+
+    private fun setupToolbar() {
+        val toolbar = binding.toolbar
+        toolbar.setOnMenuItemClickListener { item ->
+            if (item.itemId == R.id.action_about) {
+                showAboutDialog()
+                true
+            } else false
+        }
+    }
+
+    private fun showAboutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("About SMS Relay")
+            .setMessage(
+                "SMS Relay\n\n" +
+                "Automatically forwards incoming SMS to Telegram.\n\n" +
+                "Developed by\n" +
+                "Kamil Hussen\n" +
+                "kamildex.com\n\n" +
+                "Version 1.0.0"
+            )
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun setupRecyclerView() {

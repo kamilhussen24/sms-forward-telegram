@@ -12,10 +12,12 @@
         android:background="@color/surface"
         app:elevation="0dp">
         <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="SMS Relay"
-            app:titleTextColor="@color/text_primary" />
+            app:titleTextColor="@color/text_primary"
+            app:menu="@menu/menu_main" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -248,10 +250,12 @@
                     android:minWidth="0dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
                     android:text="Clear"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     app:cornerRadius="8dp" />
             </LinearLayout>
 

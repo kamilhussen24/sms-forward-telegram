@@ -112,9 +112,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(
                 "SMS Relay\n\n" +
                 "Automatically forwards incoming SMS to Telegram.\n\n" +
-                "Developed by\n" +
-                "Kamil Hussen\n" +
-                "kamildex.com\n\n" +
+                "Developed by Kamil Hussen\n\n" +
                 "Version 1.0.0"
             )
             .setPositiveButton("OK", null)

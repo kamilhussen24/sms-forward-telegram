@@ -143,18 +143,22 @@
                             android:textStyle="bold" />
                         <com.google.android.material.button.MaterialButtonToggleGroup
                             android:id="@+id/toggleGroup"
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            app:singleSelection="true" app:selectionRequired="true">
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true"
+                            app:selectionRequired="true">
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnAll"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="wrap_content" android:layout_height="34dp"
-                                android:text="All SMS" android:textSize="12sp" app:cornerRadius="8dp" />
+                                style="@style/ToggleButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:text="All SMS" />
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnFilter"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="wrap_content" android:layout_height="34dp"
-                                android:text="Filter" android:textSize="12sp" app:cornerRadius="8dp" />
+                                style="@style/ToggleButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:text="Filter" />
                         </com.google.android.material.button.MaterialButtonToggleGroup>
                     </LinearLayout>
 
@@ -214,23 +218,41 @@
 
             <!-- Log -->
             <LinearLayout
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
-                android:gravity="center_vertical" android:orientation="horizontal">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:text="Recent Messages"
-                    android:textColor="@color/text_primary" android:textSize="14sp"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Recent Messages"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
-                <TextView android:id="@+id/tvLogCount"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp" android:text="0/20"
-                    android:textColor="@color/text_secondary" android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/tvLogCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:text="0/20"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnClearLog"
                     style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content" android:layout_height="32dp"
-                    android:minWidth="0dp" android:paddingStart="8dp" android:paddingEnd="8dp"
-                    android:text="Clear" android:textSize="12sp" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="0dp"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:text="Clear"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <TextView android:id="@+id/tvEmptyLog"

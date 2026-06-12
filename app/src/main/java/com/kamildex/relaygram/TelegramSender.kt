@@ -8,32 +8,38 @@ import java.io.IOException
 import java.net.InetAddress
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 object TelegramSender {
 
     private val executor = Executors.newCachedThreadPool()
 
-    // Custom DNS — use Google DNS (8.8.8.8) directly
-    // Bypasses Android DNS cache issues
+    // Cache DNS — faster after first request
+    private val dnsCache = mutableMapOf<String, List<InetAddress>>()
+
     private val customDns = object : Dns {
         override fun lookup(hostname: String): List<InetAddress> {
+            dnsCache[hostname]?.let { return it }
             return try {
-                // Try system DNS first
                 val result = InetAddress.getAllByName(hostname).toList()
-                if (result.isNotEmpty()) result
-                else Dns.SYSTEM.lookup(hostname)
+                if (result.isNotEmpty()) {
+                    dnsCache[hostname] = result
+                    result
+                } else Dns.SYSTEM.lookup(hostname)
             } catch (e: Exception) {
                 Dns.SYSTEM.lookup(hostname)
             }
         }
     }
 
-    private fun newClient() = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+    // Shared client with connection pool — reuse connections
+    private val sharedClient = OkHttpClient.Builder()
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .writeTimeout(20, TimeUnit.SECONDS)
+        .callTimeout(25, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
-        .connectionPool(ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
+        .connectionPool(ConnectionPool(3, 30, TimeUnit.SECONDS))
         .dns(customDns)
         .build()
 
@@ -43,8 +49,18 @@ object TelegramSender {
         message: String,
         onResult: (success: Boolean, error: String?) -> Unit
     ) {
+        val future = executor.submit<Unit> {
+            attempt(token.trim(), chatId.trim(), message, retryLeft = 2, onResult = onResult)
+        }
         executor.execute {
-            attempt(token.trim(), chatId.trim(), message, retryLeft = 3, onResult = onResult)
+            try {
+                future.get(30, TimeUnit.SECONDS)
+            } catch (e: TimeoutException) {
+                future.cancel(true)
+                onResult(false, "Request timed out. Check your connection.")
+            } catch (e: Exception) {
+                onResult(false, "Error: ${e.message}")
+            }
         }
     }
 
@@ -64,11 +80,10 @@ object TelegramSender {
 
             val request = Request.Builder()
                 .url("https://api.telegram.org/bot$token/sendMessage")
-                .addHeader("Connection", "close")
                 .post(body)
                 .build()
 
-            val response = newClient().newCall(request).execute()
+            val response = sharedClient.newCall(request).execute()
             val code = response.code
             val bodyStr = response.body?.string() ?: ""
             response.close()
@@ -83,13 +98,13 @@ object TelegramSender {
                     } catch (e: Exception) { 5L }
                     Thread.sleep(wait * 1000L)
                     if (retryLeft > 0) attempt(token, chatId, message, retryLeft - 1, onResult)
-                    else onResult(false, "Too many requests")
+                    else onResult(false, "Too many requests. Wait and try again.")
                 }
 
                 code >= 500 -> {
-                    Thread.sleep(3000)
+                    Thread.sleep(2000)
                     if (retryLeft > 0) attempt(token, chatId, message, retryLeft - 1, onResult)
-                    else onResult(false, "Telegram server error")
+                    else onResult(false, "Telegram server error. Try again later.")
                 }
 
                 else -> {
@@ -101,11 +116,13 @@ object TelegramSender {
             }
 
         } catch (e: IOException) {
+            // Clear DNS cache on network error — force fresh lookup
+            dnsCache.clear()
             if (retryLeft > 0) {
-                Thread.sleep(2000)
+                Thread.sleep(1000)
                 attempt(token, chatId, message, retryLeft - 1, onResult)
             } else {
-                onResult(false, "Network error")
+                onResult(false, "Network error. Check your connection.")
             }
         } catch (e: Exception) {
             onResult(false, e.message ?: "Unknown error")

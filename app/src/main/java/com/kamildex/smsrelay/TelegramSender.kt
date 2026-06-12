@@ -5,9 +5,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 object TelegramSender {
+
+    private val executor = Executors.newCachedThreadPool()
 
     private fun newClient() = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -29,7 +32,9 @@ object TelegramSender {
     }
 
     fun send(token: String, chatId: String, message: String, onResult: (Boolean) -> Unit) {
-        sendWithRetry(token, chatId, message, 2, onResult)
+        executor.execute {
+            sendWithRetry(token, chatId, message, 2, onResult)
+        }
     }
 
     private fun sendWithRetry(
@@ -37,28 +42,24 @@ object TelegramSender {
         retryCount: Int, onResult: (Boolean) -> Unit
     ) {
         try {
-            newClient().newCall(buildRequest(token, chatId, message))
-                .enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        if (retryCount > 0) {
-                            Thread.sleep(1000)
-                            sendWithRetry(token, chatId, message, retryCount - 1, onResult)
-                        } else onResult(false)
-                    }
-                    override fun onResponse(call: Call, response: Response) {
-                        val success = response.isSuccessful
-                        response.close()
-                        if (!success && retryCount > 0) {
-                            Thread.sleep(1000)
-                            sendWithRetry(token, chatId, message, retryCount - 1, onResult)
-                        } else onResult(success)
-                    }
-                })
-        } catch (e: Exception) {
-            if (retryCount > 0) {
-                try { Thread.sleep(1000) } catch (ie: InterruptedException) {}
+            val response = newClient().newCall(buildRequest(token, chatId, message)).execute()
+            val success = response.isSuccessful
+            response.close()
+            if (!success && retryCount > 0) {
+                Thread.sleep(1500)
                 sendWithRetry(token, chatId, message, retryCount - 1, onResult)
-            } else onResult(false)
+            } else {
+                onResult(success)
+            }
+        } catch (e: IOException) {
+            if (retryCount > 0) {
+                Thread.sleep(1500)
+                sendWithRetry(token, chatId, message, retryCount - 1, onResult)
+            } else {
+                onResult(false)
+            }
+        } catch (e: Exception) {
+            onResult(false)
         }
     }
 }

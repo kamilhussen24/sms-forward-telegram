@@ -35,7 +35,6 @@ class SmsForwarderService : Service() {
             sendBroadcast(Intent("com.kamildex.smsrelay.STATUS_CHANGED"))
             return START_NOT_STICKY
         }
-
         Prefs.setActive(this, true)
         startForeground(NOTIF_ID, buildNotif(isOnline()))
         startNetworkMonitor()
@@ -73,8 +72,8 @@ class SmsForwarderService : Service() {
     private fun stopNetworkMonitor() {
         try {
             networkCallback?.let {
-                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-                cm.unregisterNetworkCallback(it)
+                (getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
+                    .unregisterNetworkCallback(it)
             }
             networkCallback = null
         } catch (e: Exception) {}
@@ -82,23 +81,20 @@ class SmsForwarderService : Service() {
 
     private fun updateNotif(online: Boolean) {
         try {
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.notify(NOTIF_ID, buildNotif(online))
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .notify(NOTIF_ID, buildNotif(online))
         } catch (e: Exception) {}
     }
 
     private fun buildNotif(online: Boolean): Notification {
-        val stopPi = PendingIntent.getService(
-            this, 0,
+        val stopPi = PendingIntent.getService(this, 0,
             Intent(this, SmsForwarderService::class.java).apply { action = ACTION_STOP },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val openPi = PendingIntent.getActivity(
-            this, 0,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val openPi = PendingIntent.getActivity(this, 0,
             Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val title = if (online) "SMS Relay Active" else "⚠️ No Network"
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val title = if (online) "SMS Relay Active" else "No Network"
         val text = if (online) "Forwarding messages to Telegram" else "Waiting for network..."
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -107,15 +103,15 @@ class SmsForwarderService : Service() {
             .setSmallIcon(android.R.drawable.ic_dialog_email)
             .setContentIntent(openPi)
             .addAction(android.R.drawable.ic_delete, "Stop", stopPi)
-            .setOngoing(true)
-            .build()
+            .setOngoing(true).build()
     }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val ch = NotificationChannel(CHANNEL_ID, "SMS Relay", NotificationManager.IMPORTANCE_LOW)
             ch.setShowBadge(false)
-            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(ch)
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .createNotificationChannel(ch)
         }
     }
 

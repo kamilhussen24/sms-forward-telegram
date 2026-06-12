@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var logAdapter: LogAdapter
+    private var lastTestTime = 0L
 
     private val statusReceiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context?, i: Intent?) { updateUI() }
@@ -44,16 +45,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Hide keyboard on start
         window.decorView.post { hideKeyboard() }
-
         setupToolbar()
         setupRecyclerView()
         loadSettings()
         updateUI()
         setupListeners()
-
         if (!hasPermissions()) showPermissionDialog()
     }
 
@@ -91,7 +88,7 @@ class MainActivity : AppCompatActivity() {
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)
             .setTitle("Permissions Required")
-            .setMessage("SMS Relay needs:\n\n• Receive SMS\n• Read SMS\n• Notifications\n\nWithout these, the app cannot forward messages.")
+            .setMessage("SMS Relay needs:\n\n- Receive SMS\n- Read SMS\n- Notifications\n\nWithout these, the app cannot forward messages.")
             .setPositiveButton("Grant") { _, _ -> requestPermissions() }
             .setCancelable(false).show()
     }
@@ -143,7 +140,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Save button
+
         binding.btnSave.setOnClickListener {
             val token = binding.etToken.text.toString().trim()
             val chatId = binding.etChatId.text.toString().trim()
@@ -154,7 +151,7 @@ class MainActivity : AppCompatActivity() {
             Prefs.saveConfig(this, token, chatId)
             hideKeyboard()
             binding.tvSavedIndicator.visibility = View.VISIBLE
-            Snackbar.make(binding.root, "✓ Configuration saved!", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(binding.root, "Configuration saved!", Snackbar.LENGTH_SHORT).show()
         }
 
         binding.toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -173,16 +170,13 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             if (!hasPermissions()) { showPermissionDialog(); return@setOnClickListener }
-
-            // Auto save on start
             Prefs.save(this, token, chatId,
                 binding.etKeywords.text.toString().trim(),
                 binding.etSenders.text.toString().trim())
             hideKeyboard()
-
             if (!isOnline()) {
                 AlertDialog.Builder(this)
-                    .setTitle("⚠️ No Internet Connection")
+                    .setTitle("No Internet Connection")
                     .setMessage("Starting without internet. Messages will forward once connection restores.")
                     .setPositiveButton("Start Anyway") { _, _ -> doStartService() }
                     .setNegativeButton("Cancel", null).show()
@@ -210,17 +204,23 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             if (!isOnline()) {
-                Snackbar.make(binding.root, "⚠️ No internet connection", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root, "No internet connection", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            val now = System.currentTimeMillis()
+            if (now - lastTestTime < 3000) {
+                Snackbar.make(binding.root, "Please wait before testing again", Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            lastTestTime = now
             hideKeyboard()
-            val msg = "✅ <b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\n🕐 ${
+            val msg = "<b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\nTime: ${
                 java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())
             }"
             TelegramSender.send(token, chatId, msg) { success ->
                 runOnUiThread {
                     Snackbar.make(binding.root,
-                        if (success) "✅ Test sent!" else "❌ Failed. Check token and Chat ID.",
+                        if (success) "Test sent successfully!" else "Failed. Check token and Chat ID.",
                         Snackbar.LENGTH_LONG).show()
                 }
             }
@@ -231,7 +231,7 @@ class MainActivity : AppCompatActivity() {
         try {
             ContextCompat.startForegroundService(this, Intent(this, SmsForwarderService::class.java))
         } catch (e: Exception) {
-            Snackbar.make(binding.root, "Failed to start: ${e.message}", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, "Failed to start service", Snackbar.LENGTH_LONG).show()
         }
     }
 
@@ -240,20 +240,10 @@ class MainActivity : AppCompatActivity() {
         binding.etChatId.setText(Prefs.getChatId(this))
         binding.etKeywords.setText(Prefs.getKeywords(this))
         binding.etSenders.setText(Prefs.getSenders(this))
-
-        // Show saved indicator if config already saved
-        if (Prefs.isConfigSaved(this)) {
-            binding.tvSavedIndicator.visibility = View.VISIBLE
-        }
-
+        if (Prefs.isConfigSaved(this)) binding.tvSavedIndicator.visibility = View.VISIBLE
         val all = Prefs.isForwardAll(this)
-        if (all) {
-            binding.btnAll.isChecked = true
-            binding.filterSection.visibility = View.GONE
-        } else {
-            binding.btnFilter.isChecked = true
-            binding.filterSection.visibility = View.VISIBLE
-        }
+        if (all) { binding.btnAll.isChecked = true; binding.filterSection.visibility = View.GONE }
+        else { binding.btnFilter.isChecked = true; binding.filterSection.visibility = View.VISIBLE }
     }
 
     private fun updateUI() {
@@ -266,7 +256,7 @@ class MainActivity : AppCompatActivity() {
         })
         binding.tvStatus.text = when {
             !active -> "Forwarding Stopped"
-            !online -> "⚠️ No Network — Waiting..."
+            !online -> "No Network — Waiting..."
             else -> "Forwarding Active"
         }
         binding.tvStatus.setTextColor(ContextCompat.getColor(this, when {
@@ -281,7 +271,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateNetworkUI(online: Boolean) {
         if (!Prefs.isActive(this)) return
         binding.statusDot.setBackgroundResource(if (online) R.drawable.dot_green else R.drawable.dot_yellow)
-        binding.tvStatus.text = if (online) "Forwarding Active" else "⚠️ No Network — Waiting..."
+        binding.tvStatus.text = if (online) "Forwarding Active" else "No Network — Waiting..."
         binding.tvStatus.setTextColor(ContextCompat.getColor(this,
             if (online) R.color.green else R.color.yellow))
     }

@@ -53,9 +53,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupToolbar() {
-        binding.toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_about) { showAboutDialog(); true } else false
-        }
+        try {
+            binding.toolbar.setOnMenuItemClickListener { item ->
+                if (item.itemId == R.id.action_about) { showAboutDialog(); true } else false
+            }
+        } catch (e: Exception) {}
     }
 
     private fun showAboutDialog() {
@@ -102,19 +104,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun askBatteryOptimization() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val pm = getSystemService(PowerManager::class.java)
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                AlertDialog.Builder(this)
-                    .setTitle("Battery Optimization")
-                    .setMessage("Disable battery optimization to ensure SMS Relay works in background.")
-                    .setPositiveButton("Disable") { _, _ ->
-                        startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                            .apply { data = Uri.parse("package:$packageName") })
-                    }
-                    .setNegativeButton("Skip", null).show()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val pm = getSystemService(PowerManager::class.java)
+                if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                    AlertDialog.Builder(this)
+                        .setTitle("Battery Optimization")
+                        .setMessage("Disable battery optimization to ensure SMS Relay works in background.")
+                        .setPositiveButton("Disable") { _, _ ->
+                            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                                .apply { data = Uri.parse("package:$packageName") })
+                        }
+                        .setNegativeButton("Skip", null).show()
+                }
             }
-        }
+        } catch (e: Exception) {}
     }
 
     private fun setupRecyclerView() {
@@ -141,7 +145,8 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             if (!hasPermissions()) { showPermissionDialog(); return@setOnClickListener }
-            if (!NetworkMonitor.isAvailable(this)) {
+            val online = try { NetworkMonitor.isAvailable(this) } catch (e: Exception) { true }
+            if (!online) {
                 AlertDialog.Builder(this)
                     .setTitle("⚠️ No Internet Connection")
                     .setMessage("You are starting without internet. SMS Relay will forward messages once connection is restored.")
@@ -170,7 +175,8 @@ class MainActivity : AppCompatActivity() {
                 Snackbar.make(binding.root, "Enter Bot Token and Chat ID first", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (!NetworkMonitor.isAvailable(this)) {
+            val online = try { NetworkMonitor.isAvailable(this) } catch (e: Exception) { true }
+            if (!online) {
                 Snackbar.make(binding.root, "⚠️ No internet connection", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -206,7 +212,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUI() {
         val active = Prefs.isActive(this)
-        val online = NetworkMonitor.isAvailable(this)
+        val online = try { NetworkMonitor.isAvailable(this) } catch (e: Exception) { true }
         binding.statusDot.setBackgroundResource(when {
             !active -> R.drawable.dot_red
             !online -> R.drawable.dot_yellow
@@ -251,9 +257,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        registerReceiverCompat(statusReceiver, IntentFilter("com.kamildex.smsrelay.STATUS_CHANGED"))
-        registerReceiverCompat(smsReceiver, IntentFilter("com.kamildex.smsrelay.SMS_FORWARDED"))
-        registerReceiverCompat(networkReceiver, IntentFilter("com.kamildex.smsrelay.NETWORK_CHANGED"))
+        try {
+            registerReceiverCompat(statusReceiver, IntentFilter("com.kamildex.smsrelay.STATUS_CHANGED"))
+            registerReceiverCompat(smsReceiver, IntentFilter("com.kamildex.smsrelay.SMS_FORWARDED"))
+            registerReceiverCompat(networkReceiver, IntentFilter("com.kamildex.smsrelay.NETWORK_CHANGED"))
+        } catch (e: Exception) {}
         updateUI()
         refreshLog()
     }

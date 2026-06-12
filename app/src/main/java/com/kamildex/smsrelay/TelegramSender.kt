@@ -4,6 +4,7 @@ import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -20,46 +21,71 @@ object TelegramSender {
         .connectionPool(ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
         .build()
 
-    private fun buildRequest(token: String, chatId: String, message: String): Request {
-        val body = JSONObject().apply {
-            put("chat_id", chatId)
-            put("text", message)
-            put("parse_mode", "HTML")
-        }.toString().toRequestBody("application/json".toMediaType())
-        return Request.Builder()
-            .url("https://api.telegram.org/bot$token/sendMessage")
-            .post(body).build()
-    }
-
-    fun send(token: String, chatId: String, message: String, onResult: (Boolean) -> Unit) {
+    fun send(token: String, chatId: String, message: String, onResult: (Boolean, String?) -> Unit) {
         executor.execute {
-            sendWithRetry(token, chatId, message, 2, onResult)
+            sendInternal(token, chatId, message, 2, onResult)
         }
     }
 
-    private fun sendWithRetry(
+    private fun sendInternal(
         token: String, chatId: String, message: String,
-        retryCount: Int, onResult: (Boolean) -> Unit
+        retryCount: Int, onResult: (Boolean, String?) -> Unit
     ) {
         try {
-            val response = newClient().newCall(buildRequest(token, chatId, message)).execute()
+            val body = JSONObject().apply {
+                put("chat_id", chatId)
+                put("text", message)
+                put("parse_mode", "HTML")
+            }.toString().toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("https://api.telegram.org/bot$token/sendMessage")
+                .post(body).build()
+
+            val response = newClient().newCall(request).execute()
+            val responseBody = response.body?.string() ?: ""
             val success = response.isSuccessful
             response.close()
-            if (!success && retryCount > 0) {
-                Thread.sleep(1500)
-                sendWithRetry(token, chatId, message, retryCount - 1, onResult)
+
+            if (!success) {
+                // Parse Telegram error
+                val errorDesc = try {
+                    JSONObject(responseBody).optString("description", "Unknown error")
+                } catch (e: JSONException) { "Unknown error" }
+
+                // Rate limit — wait and retry
+                if (response.code == 429 && retryCount > 0) {
+                    val retryAfter = try {
+                        JSONObject(responseBody)
+                            .optJSONObject("parameters")
+                            ?.optLong("retry_after", 3) ?: 3
+                    } catch (e: Exception) { 3L }
+                    Thread.sleep(retryAfter * 1000)
+                    sendInternal(token, chatId, message, retryCount - 1, onResult)
+                    return
+                }
+
+                // Other error — retry once
+                if (retryCount > 0) {
+                    Thread.sleep(2000)
+                    sendInternal(token, chatId, message, retryCount - 1, onResult)
+                    return
+                }
+
+                onResult(false, errorDesc)
             } else {
-                onResult(success)
+                onResult(true, null)
             }
+
         } catch (e: IOException) {
             if (retryCount > 0) {
-                Thread.sleep(1500)
-                sendWithRetry(token, chatId, message, retryCount - 1, onResult)
+                Thread.sleep(2000)
+                sendInternal(token, chatId, message, retryCount - 1, onResult)
             } else {
-                onResult(false)
+                onResult(false, "Network error: ${e.message}")
             }
         } catch (e: Exception) {
-            onResult(false)
+            onResult(false, e.message)
         }
     }
 }

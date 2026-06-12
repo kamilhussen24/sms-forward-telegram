@@ -217,11 +217,22 @@ class MainActivity : AppCompatActivity() {
             val msg = "<b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\nTime: ${
                 java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())
             }"
-            TelegramSender.send(token, chatId, msg) { success ->
+            TelegramSender.send(token, chatId, msg) { success, error ->
                 runOnUiThread {
-                    Snackbar.make(binding.root,
-                        if (success) "Test sent successfully!" else "Failed. Check token and Chat ID.",
-                        Snackbar.LENGTH_LONG).show()
+                    if (success) {
+                        Snackbar.make(binding.root, "Test sent successfully!", Snackbar.LENGTH_LONG).show()
+                    } else {
+                        val msg = when {
+                            error?.contains("chat not found") == true -> "Chat ID not found. Check your Chat ID."
+                            error?.contains("bot was blocked") == true -> "Bot was blocked by the user."
+                            error?.contains("Unauthorized") == true -> "Invalid Bot Token."
+                            error?.contains("Too Many Requests") == true -> "Too many requests. Wait a moment."
+                            error?.contains("Network error") == true -> "Network error. Check your connection."
+                            !error.isNullOrEmpty() -> "Failed: $error"
+                            else -> "Failed. Check token and Chat ID."
+                        }
+                        Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                    }
                 }
             }
         }

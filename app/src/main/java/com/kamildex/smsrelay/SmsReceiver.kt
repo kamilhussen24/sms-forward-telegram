@@ -52,7 +52,7 @@ class SmsReceiver : BroadcastReceiver() {
                 append("<b>Date:</b> $date")
             }
 
-            TelegramSender.send(token, chatId, msg) { success ->
+            TelegramSender.send(token, chatId, msg) { success, _ ->
                 SmsLog.add(context, sender, body, success)
                 context.sendBroadcast(Intent("com.kamildex.smsrelay.SMS_FORWARDED"))
             }

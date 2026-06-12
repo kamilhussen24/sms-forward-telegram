@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var logAdapter: LogAdapter
     private var lastTestTime = 0L
+    private var isTestPending = false
 
     private val statusReceiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context?, i: Intent?) { updateUI() }
@@ -55,9 +56,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun hideKeyboard() {
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        currentFocus?.let { imm.hideSoftInputFromWindow(it.windowToken, 0) }
-        binding.root.clearFocus()
+        try {
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            currentFocus?.let { imm.hideSoftInputFromWindow(it.windowToken, 0) }
+            binding.root.clearFocus()
+        } catch (e: Exception) {}
     }
 
     private fun setupToolbar() {
@@ -70,47 +73,62 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("About SMS Relay")
             .setMessage("SMS Relay\n\nAutomatically forwards incoming SMS to Telegram.\n\nDeveloped by Kamil Hussen\n\nVersion 1.0.0")
-            .setPositiveButton("OK", null).show()
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun isOnline(): Boolean {
         return try {
             val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val net = cm.activeNetwork ?: return false
-            cm.getNetworkCapabilities(net)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            cm.getNetworkCapabilities(net)
+                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         } catch (e: Exception) { true }
     }
 
     private fun hasPermissions() =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED &&
-        ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) ==
+                PackageManager.PERMISSION_GRANTED &&
+        ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) ==
+                PackageManager.PERMISSION_GRANTED
 
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)
             .setTitle("Permissions Required")
             .setMessage("SMS Relay needs:\n\n- Receive SMS\n- Read SMS\n- Notifications\n\nWithout these, the app cannot forward messages.")
             .setPositiveButton("Grant") { _, _ -> requestPermissions() }
-            .setCancelable(false).show()
+            .setCancelable(false)
+            .show()
     }
 
     private fun requestPermissions() {
-        val perms = mutableListOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS)
+        val perms = mutableListOf(
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             perms.add(Manifest.permission.POST_NOTIFICATIONS)
         ActivityCompat.requestPermissions(this, perms.toTypedArray(), 100)
     }
 
-    override fun onRequestPermissionsResult(rc: Int, perms: Array<out String>, results: IntArray) {
+    override fun onRequestPermissionsResult(
+        rc: Int, perms: Array<out String>, results: IntArray
+    ) {
         super.onRequestPermissionsResult(rc, perms, results)
         if (rc == 100) {
             if (results.isNotEmpty() && results.all { it == PackageManager.PERMISSION_GRANTED })
                 askBatteryOptimization()
             else
-                Snackbar.make(binding.root, "Some permissions denied. App may not work.", Snackbar.LENGTH_LONG)
-                    .setAction("Settings") {
-                        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            .apply { data = Uri.fromParts("package", packageName, null) })
-                    }.show()
+                Snackbar.make(
+                    binding.root,
+                    "Some permissions denied. App may not work correctly.",
+                    Snackbar.LENGTH_LONG
+                ).setAction("Settings") {
+                    startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            .apply { data = Uri.fromParts("package", packageName, null) }
+                    )
+                }.show()
         }
     }
 
@@ -121,12 +139,15 @@ class MainActivity : AppCompatActivity() {
                 if (!pm.isIgnoringBatteryOptimizations(packageName)) {
                     AlertDialog.Builder(this)
                         .setTitle("Battery Optimization")
-                        .setMessage("Disable battery optimization to ensure SMS Relay works in background.")
+                        .setMessage("Disable battery optimization to ensure SMS Relay works in background even when the screen is off.")
                         .setPositiveButton("Disable") { _, _ ->
-                            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                                .apply { data = Uri.parse("package:$packageName") })
+                            startActivity(
+                                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                                    .apply { data = Uri.parse("package:$packageName") }
+                            )
                         }
-                        .setNegativeButton("Skip", null).show()
+                        .setNegativeButton("Skip", null)
+                        .show()
                 }
             }
         } catch (e: Exception) {}
@@ -141,11 +162,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupListeners() {
 
+        // Save button
         binding.btnSave.setOnClickListener {
             val token = binding.etToken.text.toString().trim()
             val chatId = binding.etChatId.text.toString().trim()
             if (token.isEmpty() || chatId.isEmpty()) {
-                Snackbar.make(binding.root, "Bot Token and Chat ID cannot be empty", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root,
+                    "Bot Token and Chat ID cannot be empty",
+                    Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             Prefs.saveConfig(this, token, chatId)
@@ -154,6 +178,7 @@ class MainActivity : AppCompatActivity() {
             Snackbar.make(binding.root, "Configuration saved!", Snackbar.LENGTH_SHORT).show()
         }
 
+        // Forward mode toggle
         binding.toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 val all = checkedId == binding.btnAll.id
@@ -162,14 +187,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Start
         binding.btnStart.setOnClickListener {
             val token = binding.etToken.text.toString().trim()
             val chatId = binding.etChatId.text.toString().trim()
             if (token.isEmpty() || chatId.isEmpty()) {
-                Snackbar.make(binding.root, "Bot Token and Chat ID are required", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root,
+                    "Bot Token and Chat ID are required",
+                    Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (!hasPermissions()) { showPermissionDialog(); return@setOnClickListener }
+            if (!hasPermissions()) {
+                showPermissionDialog()
+                return@setOnClickListener
+            }
             Prefs.save(this, token, chatId,
                 binding.etKeywords.text.toString().trim(),
                 binding.etSenders.text.toString().trim())
@@ -177,61 +208,100 @@ class MainActivity : AppCompatActivity() {
             if (!isOnline()) {
                 AlertDialog.Builder(this)
                     .setTitle("No Internet Connection")
-                    .setMessage("Starting without internet. Messages will forward once connection restores.")
+                    .setMessage("Starting without internet. Messages will be forwarded once connection is restored.")
                     .setPositiveButton("Start Anyway") { _, _ -> doStartService() }
-                    .setNegativeButton("Cancel", null).show()
+                    .setNegativeButton("Cancel", null)
+                    .show()
             } else {
                 doStartService()
             }
         }
 
+        // Stop
         binding.btnStop.setOnClickListener {
             startService(Intent(this, SmsForwarderService::class.java).apply {
                 action = SmsForwarderService.ACTION_STOP
             })
         }
 
+        // Clear log
         binding.btnClearLog.setOnClickListener {
-            SmsLog.clear(this); refreshLog()
+            SmsLog.clear(this)
+            refreshLog()
             Snackbar.make(binding.root, "Log cleared", Snackbar.LENGTH_SHORT).show()
         }
 
+        // Test
         binding.btnTest.setOnClickListener {
+            if (isTestPending) {
+                Snackbar.make(binding.root, "Test in progress...", Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             val token = binding.etToken.text.toString().trim()
             val chatId = binding.etChatId.text.toString().trim()
+
             if (token.isEmpty() || chatId.isEmpty()) {
-                Snackbar.make(binding.root, "Enter Bot Token and Chat ID first", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root,
+                    "Enter Bot Token and Chat ID first",
+                    Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
             if (!isOnline()) {
-                Snackbar.make(binding.root, "No internet connection", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root,
+                    "No internet connection",
+                    Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
             val now = System.currentTimeMillis()
             if (now - lastTestTime < 3000) {
-                Snackbar.make(binding.root, "Please wait before testing again", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root,
+                    "Please wait before testing again",
+                    Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
             lastTestTime = now
+            isTestPending = true
             hideKeyboard()
+
+            // Show loading
+            binding.btnTest.isEnabled = false
+            binding.btnTest.text = "..."
+
             val msg = "<b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\nTime: ${
-                java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())
+                java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+                    .format(java.util.Date())
             }"
+
             TelegramSender.send(token, chatId, msg) { success, error ->
                 runOnUiThread {
+                    isTestPending = false
+                    binding.btnTest.isEnabled = true
+                    binding.btnTest.text = "Test"
+
                     if (success) {
-                        Snackbar.make(binding.root, "Test sent successfully!", Snackbar.LENGTH_LONG).show()
+                        Snackbar.make(binding.root,
+                            "Test sent successfully!",
+                            Snackbar.LENGTH_LONG).show()
                     } else {
-                        val msg = when {
-                            error?.contains("chat not found") == true -> "Chat ID not found. Check your Chat ID."
-                            error?.contains("bot was blocked") == true -> "Bot was blocked by the user."
-                            error?.contains("Unauthorized") == true -> "Invalid Bot Token."
-                            error?.contains("Too Many Requests") == true -> "Too many requests. Wait a moment."
-                            error?.contains("Network error") == true -> "Network error. Check your connection."
-                            !error.isNullOrEmpty() -> "Failed: $error"
+                        val errorMsg = when {
+                            error?.contains("chat not found", ignoreCase = true) == true ->
+                                "Chat ID not found. Make sure you sent /start to your bot."
+                            error?.contains("Unauthorized", ignoreCase = true) == true ->
+                                "Invalid Bot Token. Please check and re-enter."
+                            error?.contains("bot was blocked", ignoreCase = true) == true ->
+                                "Bot was blocked. Unblock the bot in Telegram."
+                            error?.contains("Too Many Requests", ignoreCase = true) == true ->
+                                "Too many requests. Wait a moment and try again."
+                            error?.contains("Network error", ignoreCase = true) == true ->
+                                "Network error. Check your internet connection."
+                            !error.isNullOrEmpty() -> "Error: $error"
                             else -> "Failed. Check token and Chat ID."
                         }
-                        Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                        Snackbar.make(binding.root, errorMsg, Snackbar.LENGTH_LONG).show()
                     }
                 }
             }
@@ -240,7 +310,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun doStartService() {
         try {
-            ContextCompat.startForegroundService(this, Intent(this, SmsForwarderService::class.java))
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, SmsForwarderService::class.java)
+            )
         } catch (e: Exception) {
             Snackbar.make(binding.root, "Failed to start service", Snackbar.LENGTH_LONG).show()
         }
@@ -253,8 +326,13 @@ class MainActivity : AppCompatActivity() {
         binding.etSenders.setText(Prefs.getSenders(this))
         if (Prefs.isConfigSaved(this)) binding.tvSavedIndicator.visibility = View.VISIBLE
         val all = Prefs.isForwardAll(this)
-        if (all) { binding.btnAll.isChecked = true; binding.filterSection.visibility = View.GONE }
-        else { binding.btnFilter.isChecked = true; binding.filterSection.visibility = View.VISIBLE }
+        if (all) {
+            binding.btnAll.isChecked = true
+            binding.filterSection.visibility = View.GONE
+        } else {
+            binding.btnFilter.isChecked = true
+            binding.filterSection.visibility = View.VISIBLE
+        }
     }
 
     private fun updateUI() {
@@ -281,8 +359,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateNetworkUI(online: Boolean) {
         if (!Prefs.isActive(this)) return
-        binding.statusDot.setBackgroundResource(if (online) R.drawable.dot_green else R.drawable.dot_yellow)
-        binding.tvStatus.text = if (online) "Forwarding Active" else "No Network — Waiting..."
+        binding.statusDot.setBackgroundResource(
+            if (online) R.drawable.dot_green else R.drawable.dot_yellow)
+        binding.tvStatus.text =
+            if (online) "Forwarding Active" else "No Network — Waiting..."
         binding.tvStatus.setTextColor(ContextCompat.getColor(this,
             if (online) R.color.green else R.color.yellow))
     }

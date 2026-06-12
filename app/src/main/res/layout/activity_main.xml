@@ -7,28 +7,20 @@
     android:background="@color/background">
 
     <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/surface"
-        app:elevation="0dp">
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/surface" app:elevation="0dp">
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="SMS Relay"
-            app:titleTextColor="@color/text_primary"
+            android:layout_width="match_parent" android:layout_height="?attr/actionBarSize"
+            app:title="SMS Relay" app:titleTextColor="@color/text_primary"
             app:menu="@menu/menu_main" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="match_parent" android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
 
             <!-- Status Card -->
             <com.google.android.material.card.MaterialCardView
@@ -37,8 +29,10 @@
                 app:cardBackgroundColor="@color/surface" app:cardCornerRadius="16dp"
                 app:cardElevation="0dp" app:strokeColor="@color/stroke" app:strokeWidth="1dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
-                    <View android:id="@+id/statusDot" android:layout_width="10dp" android:layout_height="10dp"
+                    android:gravity="center_vertical" android:orientation="horizontal"
+                    android:padding="16dp">
+                    <View android:id="@+id/statusDot"
+                        android:layout_width="10dp" android:layout_height="10dp"
                         android:background="@drawable/dot_red" />
                     <TextView android:id="@+id/tvStatus"
                         android:layout_width="0dp" android:layout_height="wrap_content"
@@ -67,7 +61,6 @@
                         android:textColor="@color/text_primary" android:textSize="13sp"
                         android:textStyle="bold" />
 
-                    <!-- Bot Token -->
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:layout_marginBottom="4dp" android:text="Bot Token"
                         android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -80,13 +73,9 @@
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etToken"
                             android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:hint="1234567890:ABCdef..."
-                            android:inputType="text"
-                            android:focusable="true"
-                            android:focusableInTouchMode="true" />
+                            android:hint="1234567890:ABCdef..." android:inputType="text" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Chat ID -->
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:layout_marginBottom="4dp" android:text="Chat ID"
                         android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -99,42 +88,25 @@
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etChatId"
                             android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:hint="Your Chat ID"
-                            android:inputType="numberSigned"
-                            android:focusable="true"
-                            android:focusableInTouchMode="true" />
+                            android:hint="Your Chat ID" android:inputType="numberSigned" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Save button + indicator at bottom right -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="end|center_vertical"
-                        android:orientation="horizontal"
+                    <!-- Save button bottom right -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:gravity="end|center_vertical" android:orientation="horizontal"
                         android:layout_marginTop="8dp">
-                        <TextView
-                            android:id="@+id/tvSavedIndicator"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Configuration saved"
-                            android:textColor="@color/green"
-                            android:textSize="12sp"
+                        <TextView android:id="@+id/tvSavedIndicator"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:text="Configuration saved"
+                            android:textColor="@color/green" android:textSize="12sp"
                             android:visibility="gone" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSave"
-                            android:layout_width="wrap_content"
-                            android:layout_height="36dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="0dp"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp"
-                            android:text="Save"
-                            android:textSize="13sp"
-                            app:cornerRadius="8dp" />
+                            android:layout_width="wrap_content" android:layout_height="36dp"
+                            android:insetTop="0dp" android:insetBottom="0dp"
+                            android:minWidth="0dp" android:paddingStart="16dp" android:paddingEnd="16dp"
+                            android:text="Save" android:textSize="13sp" app:cornerRadius="8dp" />
                     </LinearLayout>
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -205,7 +177,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Start/Stop Buttons -->
+            <!-- Start/Stop -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnStart"
                 android:layout_width="match_parent" android:layout_height="52dp"
@@ -224,7 +196,8 @@
                 android:gravity="center_vertical" android:orientation="horizontal">
                 <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                     android:layout_weight="1" android:text="Recent Messages"
-                    android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+                    android:textColor="@color/text_primary" android:textSize="14sp"
+                    android:textStyle="bold" />
                 <TextView android:id="@+id/tvLogCount"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp" android:text="0/20"
@@ -235,8 +208,6 @@
                     android:insetTop="0dp" android:insetBottom="0dp" android:minWidth="0dp"
                     android:text="Clear" android:textSize="12sp"
                     app:backgroundTint="@color/red_light"
-                    app:strokeColor="@color/red_light"
-                    app:strokeWidth="1dp"
                     app:cornerRadius="8dp" />
             </LinearLayout>
 

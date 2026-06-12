@@ -1,4 +1,4 @@
-name: 🚀 Build SMS Relay
+name: Build SMS Relay
 
 on:
   workflow_dispatch:
@@ -28,11 +28,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
 
-      - name: 🔨 Build Debug APK
+      - name: Build Debug APK
         if: inputs.build_type == 'debug'
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: 📤 Upload Debug APK
+      - name: Upload Debug APK
         if: inputs.build_type == 'debug'
         uses: actions/upload-artifact@v4
         with:
@@ -40,15 +40,15 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
-      - name: 📁 Create keystore dir
+      - name: Create keystore dir
         if: inputs.build_type == 'release'
         run: mkdir -p app/keystore
 
-      - name: 🔑 Decode Keystore
+      - name: Decode Keystore
         if: inputs.build_type == 'release'
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore/android.keystore
 
-      - name: 🏗️ Build Release APK
+      - name: Build Release APK
         if: inputs.build_type == 'release'
         run: ./gradlew assembleRelease --stacktrace
         env:
@@ -56,7 +56,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 📤 Upload Release APK
+      - name: Upload Release APK
         if: inputs.build_type == 'release'
         uses: actions/upload-artifact@v4
         with:

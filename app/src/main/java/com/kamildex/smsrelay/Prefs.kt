@@ -16,27 +16,19 @@ object Prefs {
 
     fun saveConfig(c: Context, token: String, chatId: String) {
         p(c).edit().apply {
-            putString("token", token)
-            putString("chat_id", chatId)
+            putString("token", token.trim())
+            putString("chat_id", chatId.trim())
             putBoolean("config_saved", true)
-            apply()
-        }
-    }
-
-    fun saveFilters(c: Context, keywords: String, senders: String) {
-        p(c).edit().apply {
-            putString("keywords", keywords)
-            putString("senders", senders)
             apply()
         }
     }
 
     fun save(c: Context, token: String, chatId: String, keywords: String, senders: String) {
         p(c).edit().apply {
-            putString("token", token)
-            putString("chat_id", chatId)
-            putString("keywords", keywords)
-            putString("senders", senders)
+            putString("token", token.trim())
+            putString("chat_id", chatId.trim())
+            putString("keywords", keywords.trim())
+            putString("senders", senders.trim())
             putBoolean("config_saved", true)
             apply()
         }

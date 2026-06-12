@@ -35,6 +35,7 @@ class SmsForwarderService : Service() {
             sendBroadcast(Intent("com.kamildex.smsrelay.STATUS_CHANGED"))
             return START_NOT_STICKY
         }
+
         Prefs.setActive(this, true)
         startForeground(NOTIF_ID, buildNotif(isOnline()))
         startNetworkMonitor()
@@ -46,7 +47,8 @@ class SmsForwarderService : Service() {
         return try {
             val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val net = cm.activeNetwork ?: return false
-            cm.getNetworkCapabilities(net)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            cm.getNetworkCapabilities(net)
+                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         } catch (e: Exception) { false }
     }
 
@@ -56,16 +58,25 @@ class SmsForwarderService : Service() {
             networkCallback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
                     updateNotif(true)
-                    sendBroadcast(Intent("com.kamildex.smsrelay.NETWORK_CHANGED").putExtra("online", true))
+                    sendBroadcast(
+                        Intent("com.kamildex.smsrelay.NETWORK_CHANGED")
+                            .putExtra("online", true)
+                    )
                 }
                 override fun onLost(network: Network) {
                     updateNotif(false)
-                    sendBroadcast(Intent("com.kamildex.smsrelay.NETWORK_CHANGED").putExtra("online", false))
+                    sendBroadcast(
+                        Intent("com.kamildex.smsrelay.NETWORK_CHANGED")
+                            .putExtra("online", false)
+                    )
                 }
             }
-            val req = NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build()
-            cm.registerNetworkCallback(req, networkCallback!!)
+            cm.registerNetworkCallback(
+                NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build(),
+                networkCallback!!
+            )
         } catch (e: Exception) {}
     }
 
@@ -87,31 +98,34 @@ class SmsForwarderService : Service() {
     }
 
     private fun buildNotif(online: Boolean): Notification {
-        val stopPi = PendingIntent.getService(this, 0,
+        val stopPi = PendingIntent.getService(
+            this, 0,
             Intent(this, SmsForwarderService::class.java).apply { action = ACTION_STOP },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val openPi = PendingIntent.getActivity(this, 0,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val openPi = PendingIntent.getActivity(
+            this, 0,
             Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-
-        val title = if (online) "SMS Relay Active" else "No Network"
-        val text = if (online) "Forwarding messages to Telegram" else "Waiting for network..."
-
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(title)
-            .setContentText(text)
+            .setContentTitle(if (online) "SMS Relay Active" else "No Network")
+            .setContentText(if (online) "Forwarding messages to Telegram" else "Waiting for network...")
             .setSmallIcon(android.R.drawable.ic_dialog_email)
             .setContentIntent(openPi)
             .addAction(android.R.drawable.ic_delete, "Stop", stopPi)
-            .setOngoing(true).build()
+            .setOngoing(true)
+            .build()
     }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = NotificationChannel(CHANNEL_ID, "SMS Relay", NotificationManager.IMPORTANCE_LOW)
-            ch.setShowBadge(false)
-            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-                .createNotificationChannel(ch)
+            NotificationChannel(CHANNEL_ID, "SMS Relay", NotificationManager.IMPORTANCE_LOW)
+                .apply { setShowBadge(false) }
+                .also {
+                    (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                        .createNotificationChannel(it)
+                }
         }
     }
 

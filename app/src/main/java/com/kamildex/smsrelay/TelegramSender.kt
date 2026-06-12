@@ -8,30 +8,67 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object TelegramSender {
+
+    private fun buildRequest(token: String, chatId: String, message: String): Request {
+        val body = JSONObject().apply {
+            put("chat_id", chatId)
+            put("text", message)
+            put("parse_mode", "HTML")
+        }.toString().toRequestBody("application/json".toMediaType())
+
+        return Request.Builder()
+            .url("https://api.telegram.org/bot$token/sendMessage")
+            .post(body)
+            .build()
+    }
+
+    private fun newClient() = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        // No connection pool — always fresh connection
+        .connectionPool(ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
+        .build()
+
     fun send(token: String, chatId: String, message: String, onResult: (Boolean) -> Unit) {
+        sendWithRetry(token, chatId, message, retryCount = 2, onResult = onResult)
+    }
+
+    private fun sendWithRetry(
+        token: String, chatId: String, message: String,
+        retryCount: Int, onResult: (Boolean) -> Unit
+    ) {
         try {
-            val client = OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true)
-                .build()
-
-            val body = JSONObject().apply {
-                put("chat_id", chatId)
-                put("text", message)
-                put("parse_mode", "HTML")
-            }.toString().toRequestBody("application/json".toMediaType())
-
-            val request = Request.Builder()
-                .url("https://api.telegram.org/bot$token/sendMessage")
-                .post(body).build()
-
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) { onResult(false) }
-                override fun onResponse(call: Call, response: Response) {
-                    onResult(response.isSuccessful); response.close()
-                }
-            })
-        } catch (e: Exception) { onResult(false) }
+            newClient().newCall(buildRequest(token, chatId, message))
+                .enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        if (retryCount > 0) {
+                            // Wait 1 second then retry
+                            Thread.sleep(1000)
+                            sendWithRetry(token, chatId, message, retryCount - 1, onResult)
+                        } else {
+                            onResult(false)
+                        }
+                    }
+                    override fun onResponse(call: Call, response: Response) {
+                        val success = response.isSuccessful
+                        response.close()
+                        if (!success && retryCount > 0) {
+                            Thread.sleep(1000)
+                            sendWithRetry(token, chatId, message, retryCount - 1, onResult)
+                        } else {
+                            onResult(success)
+                        }
+                    }
+                })
+        } catch (e: Exception) {
+            if (retryCount > 0) {
+                try { Thread.sleep(1000) } catch (ie: InterruptedException) {}
+                sendWithRetry(token, chatId, message, retryCount - 1, onResult)
+            } else {
+                onResult(false)
+            }
+        }
     }
 }

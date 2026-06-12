@@ -58,8 +58,18 @@ class MainActivity : AppCompatActivity() {
     private fun hideKeyboard() {
         try {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            currentFocus?.let { imm.hideSoftInputFromWindow(it.windowToken, 0) }
+            // Force hide keyboard — works on Android 8+
+            imm.hideSoftInputFromWindow(binding.root.windowToken, 0)
+            currentFocus?.let { 
+                imm.hideSoftInputFromWindow(it.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+                it.clearFocus()
+            }
             binding.root.clearFocus()
+            // Remove focus from all input fields
+            binding.etToken.clearFocus()
+            binding.etChatId.clearFocus()
+            binding.etSenders.clearFocus()
+            binding.etKeywords.clearFocus()
         } catch (e: Exception) {}
     }
 

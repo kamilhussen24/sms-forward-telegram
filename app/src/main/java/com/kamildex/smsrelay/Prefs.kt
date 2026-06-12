@@ -23,13 +23,14 @@ object Prefs {
         }
     }
 
-    fun save(c: Context, token: String, chatId: String, keywords: String, senders: String) {
+    fun save(c: Context, token: String, chatId: String, keywords: String, senders: String, forwardAll: Boolean? = null) {
         p(c).edit().apply {
             putString("token", token.trim())
             putString("chat_id", chatId.trim())
             putString("keywords", keywords.trim())
             putString("senders", senders.trim())
             putBoolean("config_saved", true)
+            if (forwardAll != null) putBoolean("forward_all", forwardAll)
             apply()
         }
     }

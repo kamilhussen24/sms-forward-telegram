@@ -172,10 +172,12 @@ class MainActivity : AppCompatActivity() {
                     Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // Save all fields
+            // Save all fields including forward mode
+            val isForwardAll = binding.btnAll.isChecked
             Prefs.save(this, token, chatId,
                 binding.etKeywords.text.toString().trim(),
-                binding.etSenders.text.toString().trim())
+                binding.etSenders.text.toString().trim(),
+                forwardAll = isForwardAll)
             hideKeyboard()
             binding.tvSaveHint.visibility = View.GONE
             binding.tvSavedIndicator.visibility = View.VISIBLE

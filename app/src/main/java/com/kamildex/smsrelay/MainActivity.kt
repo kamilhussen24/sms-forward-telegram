@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -44,6 +45,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Hide keyboard on start
+        window.decorView.post { hideKeyboard() }
+
         setupToolbar()
         setupRecyclerView()
         loadSettings()
@@ -51,6 +55,12 @@ class MainActivity : AppCompatActivity() {
         setupListeners()
 
         if (!hasPermissions()) showPermissionDialog()
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        currentFocus?.let { imm.hideSoftInputFromWindow(it.windowToken, 0) }
+        binding.root.clearFocus()
     }
 
     private fun setupToolbar() {
@@ -96,15 +106,14 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(rc: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(rc, perms, results)
         if (rc == 100) {
-            if (results.isNotEmpty() && results.all { it == PackageManager.PERMISSION_GRANTED }) {
+            if (results.isNotEmpty() && results.all { it == PackageManager.PERMISSION_GRANTED })
                 askBatteryOptimization()
-            } else {
+            else
                 Snackbar.make(binding.root, "Some permissions denied. App may not work.", Snackbar.LENGTH_LONG)
                     .setAction("Settings") {
                         startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                             .apply { data = Uri.fromParts("package", packageName, null) })
                     }.show()
-            }
         }
     }
 
@@ -134,6 +143,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // Save button
+        binding.btnSave.setOnClickListener {
+            val token = binding.etToken.text.toString().trim()
+            val chatId = binding.etChatId.text.toString().trim()
+            if (token.isEmpty() || chatId.isEmpty()) {
+                Snackbar.make(binding.root, "Bot Token and Chat ID cannot be empty", Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            Prefs.saveConfig(this, token, chatId)
+            hideKeyboard()
+            binding.tvSavedIndicator.visibility = View.VISIBLE
+            Snackbar.make(binding.root, "✓ Configuration saved!", Snackbar.LENGTH_SHORT).show()
+        }
+
         binding.toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 val all = checkedId == binding.btnAll.id
@@ -149,18 +172,18 @@ class MainActivity : AppCompatActivity() {
                 Snackbar.make(binding.root, "Bot Token and Chat ID are required", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (!hasPermissions()) {
-                showPermissionDialog()
-                return@setOnClickListener
-            }
+            if (!hasPermissions()) { showPermissionDialog(); return@setOnClickListener }
+
+            // Auto save on start
             Prefs.save(this, token, chatId,
                 binding.etKeywords.text.toString().trim(),
                 binding.etSenders.text.toString().trim())
+            hideKeyboard()
 
             if (!isOnline()) {
                 AlertDialog.Builder(this)
                     .setTitle("⚠️ No Internet Connection")
-                    .setMessage("Starting without internet. Messages will be forwarded once connection is restored.")
+                    .setMessage("Starting without internet. Messages will forward once connection restores.")
                     .setPositiveButton("Start Anyway") { _, _ -> doStartService() }
                     .setNegativeButton("Cancel", null).show()
             } else {
@@ -169,14 +192,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnStop.setOnClickListener {
-            val intent = Intent(this, SmsForwarderService::class.java)
-            intent.action = SmsForwarderService.ACTION_STOP
-            startService(intent)
+            startService(Intent(this, SmsForwarderService::class.java).apply {
+                action = SmsForwarderService.ACTION_STOP
+            })
         }
 
         binding.btnClearLog.setOnClickListener {
-            SmsLog.clear(this)
-            refreshLog()
+            SmsLog.clear(this); refreshLog()
             Snackbar.make(binding.root, "Log cleared", Snackbar.LENGTH_SHORT).show()
         }
 
@@ -191,6 +213,7 @@ class MainActivity : AppCompatActivity() {
                 Snackbar.make(binding.root, "⚠️ No internet connection", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            hideKeyboard()
             val msg = "✅ <b>SMS Relay Connected!</b>\n\nYour bot is working correctly.\n🕐 ${
                 java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())
             }"
@@ -206,10 +229,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun doStartService() {
         try {
-            val intent = Intent(this, SmsForwarderService::class.java)
-            ContextCompat.startForegroundService(this, intent)
+            ContextCompat.startForegroundService(this, Intent(this, SmsForwarderService::class.java))
         } catch (e: Exception) {
-            Snackbar.make(binding.root, "Failed to start service: ${e.message}", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, "Failed to start: ${e.message}", Snackbar.LENGTH_LONG).show()
         }
     }
 
@@ -218,6 +240,12 @@ class MainActivity : AppCompatActivity() {
         binding.etChatId.setText(Prefs.getChatId(this))
         binding.etKeywords.setText(Prefs.getKeywords(this))
         binding.etSenders.setText(Prefs.getSenders(this))
+
+        // Show saved indicator if config already saved
+        if (Prefs.isConfigSaved(this)) {
+            binding.tvSavedIndicator.visibility = View.VISIBLE
+        }
+
         val all = Prefs.isForwardAll(this)
         if (all) {
             binding.btnAll.isChecked = true
@@ -267,11 +295,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun safeRegister(receiver: BroadcastReceiver, filter: IntentFilter) {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                 registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            } else {
+            else
                 registerReceiver(receiver, filter)
-            }
         } catch (e: Exception) {}
     }
 

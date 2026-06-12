@@ -33,6 +33,13 @@ jobs:
 
       - run: chmod +x gradlew
 
+      # Get version from build.gradle
+      - name: Get Version
+        id: version
+        run: |
+          VERSION=$(grep versionName app/build.gradle | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       # ── Debug ─────────────────────────────────────────────────────
       - name: Build Debug APK
         if: inputs.build_type == 'debug'
@@ -42,7 +49,7 @@ jobs:
         if: inputs.build_type == 'debug'
         uses: actions/upload-artifact@v4
         with:
-          name: relaygram-debug
+          name: relaygram-debug-v${{ steps.version.outputs.version }}
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
@@ -67,7 +74,7 @@ jobs:
         if: inputs.build_type == 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: relaygram-release
+          name: relaygram-release-v${{ steps.version.outputs.version }}
           path: app/build/outputs/apk/release/*.apk
           retention-days: 30
 
@@ -75,9 +82,12 @@ jobs:
         if: inputs.build_type == 'release'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.run_number }}
-          name: RelayGram v${{ github.run_number }}
-          body: RelayGram release build
+          tag_name: v${{ steps.version.outputs.version }}-${{ github.run_number }}
+          name: RelayGram v${{ steps.version.outputs.version }}
+          body: |
+            RelayGram v${{ steps.version.outputs.version }}
+
+            SMS to Telegram forwarder — Developed by Kamil Hussen
           files: app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

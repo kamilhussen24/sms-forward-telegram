@@ -16,7 +16,8 @@ class LogAdapter(private var items: List<SmsEntry>) : RecyclerView.Adapter<LogAd
             h.b.tvSender.text = e.sender
             h.b.tvMessage.text = e.message
             h.b.tvTime.text = "${e.time} · ${e.date}"
-            h.b.statusDot.setBackgroundResource(if (e.forwarded) R.drawable.dot_green else R.drawable.dot_red)
+            h.b.statusDot.setBackgroundResource(
+                if (e.forwarded) R.drawable.dot_green else R.drawable.dot_red)
         }
     }
 

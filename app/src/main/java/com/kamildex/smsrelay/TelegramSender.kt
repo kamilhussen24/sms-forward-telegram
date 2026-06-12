@@ -8,31 +8,30 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object TelegramSender {
-
-    // Fresh client every time — fixes reconnect issue
-    private fun newClient() = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .retryOnConnectionFailure(true)
-        .build()
-
     fun send(token: String, chatId: String, message: String, onResult: (Boolean) -> Unit) {
-        val body = JSONObject().apply {
-            put("chat_id", chatId)
-            put("text", message)
-            put("parse_mode", "HTML")
-        }.toString().toRequestBody("application/json".toMediaType())
+        try {
+            val client = OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .build()
 
-        val request = Request.Builder()
-            .url("https://api.telegram.org/bot$token/sendMessage")
-            .post(body).build()
+            val body = JSONObject().apply {
+                put("chat_id", chatId)
+                put("text", message)
+                put("parse_mode", "HTML")
+            }.toString().toRequestBody("application/json".toMediaType())
 
-        newClient().newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { onResult(false) }
-            override fun onResponse(call: Call, response: Response) {
-                onResult(response.isSuccessful); response.close()
-            }
-        })
+            val request = Request.Builder()
+                .url("https://api.telegram.org/bot$token/sendMessage")
+                .post(body).build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) { onResult(false) }
+                override fun onResponse(call: Call, response: Response) {
+                    onResult(response.isSuccessful); response.close()
+                }
+            })
+        } catch (e: Exception) { onResult(false) }
     }
 }

@@ -20,18 +20,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
-
       - uses: gradle/actions/setup-gradle@v4
-
       - run: chmod +x gradlew
 
-      # ── Debug ─────────────────────────────────────────────────────
       - name: 🔨 Build Debug APK
         if: inputs.build_type == 'debug'
         run: ./gradlew assembleDebug --stacktrace
@@ -44,7 +40,6 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
-      # ── Release ───────────────────────────────────────────────────
       - name: 📁 Create keystore dir
         if: inputs.build_type == 'release'
         run: mkdir -p app/keystore

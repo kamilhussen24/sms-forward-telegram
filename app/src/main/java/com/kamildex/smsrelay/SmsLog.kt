@@ -6,11 +6,16 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
 
-data class SmsEntry(val sender: String, val message: String, val time: String, val date: String, val forwarded: Boolean)
+data class SmsEntry(
+    val sender: String,
+    val message: String,
+    val time: String,
+    val date: String,
+    val forwarded: Boolean
+)
 
 object SmsLog {
     private const val MAX = 20
-
     private fun p(c: Context) = c.getSharedPreferences("sms_relay_prefs", Context.MODE_PRIVATE)
 
     fun add(c: Context, sender: String, message: String, forwarded: Boolean) {

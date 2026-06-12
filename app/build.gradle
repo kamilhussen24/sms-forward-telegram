@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.kamildex.smsrelay'
+    namespace 'com.kamildex.relaygram'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.kamildex.smsrelay"
+        applicationId "com.kamildex.relaygram"
         minSdk 23
         targetSdk 33
         versionCode 1

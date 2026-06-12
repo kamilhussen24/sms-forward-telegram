@@ -12,7 +12,7 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent" android:layout_height="?attr/actionBarSize"
-            app:title="SMS Relay" app:titleTextColor="@color/text_primary"
+            app:title="RelayGram" app:titleTextColor="@color/text_primary"
             app:menu="@menu/menu_main" />
     </com.google.android.material.appbar.AppBarLayout>
 

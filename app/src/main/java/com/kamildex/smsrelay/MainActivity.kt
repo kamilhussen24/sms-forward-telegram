@@ -172,8 +172,12 @@ class MainActivity : AppCompatActivity() {
                     Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            Prefs.saveConfig(this, token, chatId)
+            // Save all fields
+            Prefs.save(this, token, chatId,
+                binding.etKeywords.text.toString().trim(),
+                binding.etSenders.text.toString().trim())
             hideKeyboard()
+            binding.tvSaveHint.visibility = View.GONE
             binding.tvSavedIndicator.visibility = View.VISIBLE
             Snackbar.make(binding.root, "Configuration saved!", Snackbar.LENGTH_SHORT).show()
         }
@@ -324,7 +328,10 @@ class MainActivity : AppCompatActivity() {
         binding.etChatId.setText(Prefs.getChatId(this))
         binding.etKeywords.setText(Prefs.getKeywords(this))
         binding.etSenders.setText(Prefs.getSenders(this))
-        if (Prefs.isConfigSaved(this)) binding.tvSavedIndicator.visibility = View.VISIBLE
+        if (Prefs.isConfigSaved(this)) {
+            binding.tvSavedIndicator.visibility = View.VISIBLE
+            binding.tvSaveHint.visibility = View.GONE
+        }
         val all = Prefs.isForwardAll(this)
         if (all) {
             binding.btnAll.isChecked = true

@@ -22,12 +22,9 @@
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:padding="16dp">
 
-            <!-- Dummy view to prevent auto-focus on input fields -->
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:focusable="true"
-                android:focusableInTouchMode="true" />
+            <!-- Dummy focus view — prevents auto-focus on input fields -->
+            <View android:layout_width="0dp" android:layout_height="0dp"
+                android:focusable="true" android:focusableInTouchMode="true" />
 
             <!-- Status Card -->
             <com.google.android.material.card.MaterialCardView
@@ -98,22 +95,6 @@
                             android:hint="Your Chat ID" android:inputType="numberSigned" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Save button bottom right -->
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:gravity="end|center_vertical" android:orientation="horizontal"
-                        android:layout_marginTop="8dp">
-                        <TextView android:id="@+id/tvSavedIndicator"
-                            android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:text="Configuration saved"
-                            android:textColor="@color/green" android:textSize="12sp"
-                            android:visibility="gone" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSave"
-                            android:layout_width="wrap_content" android:layout_height="36dp"
-                            android:insetTop="0dp" android:insetBottom="0dp"
-                            android:minWidth="0dp" android:paddingStart="16dp" android:paddingEnd="16dp"
-                            android:text="Save" android:textSize="13sp" app:cornerRadius="8dp" />
-                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -126,6 +107,7 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:orientation="vertical" android:padding="16dp">
 
+                    <!-- Forward Mode Toggle -->
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:gravity="center_vertical" android:orientation="horizontal"
                         android:layout_marginBottom="14dp">
@@ -148,9 +130,11 @@
                         </com.google.android.material.button.MaterialButtonToggleGroup>
                     </LinearLayout>
 
+                    <!-- Filter inputs -->
                     <LinearLayout android:id="@+id/filterSection"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="vertical">
+
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp" android:text="Senders"
                             android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -166,6 +150,7 @@
                                 android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:hint="GP, DBBL, BKASH" android:inputType="text" />
                         </com.google.android.material.textfield.TextInputLayout>
+
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp" android:text="Keywords"
                             android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -180,11 +165,44 @@
                                 android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:hint="OTP, BANK, BKASH" android:inputType="text" />
                         </com.google.android.material.textfield.TextInputLayout>
+
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Start/Stop -->
+            <!-- Save Card — bottom of all inputs -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/surface" app:cardCornerRadius="16dp"
+                app:cardElevation="0dp" app:strokeColor="@color/stroke" app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:gravity="center_vertical" android:orientation="horizontal"
+                    android:padding="16dp">
+                    <TextView android:id="@+id/tvSavedIndicator"
+                        android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Configuration saved"
+                        android:textColor="@color/green"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Save all settings"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        android:id="@+id/tvSaveHint"
+                        android:visibility="visible" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSave"
+                        android:layout_width="wrap_content" android:layout_height="42dp"
+                        android:insetTop="0dp" android:insetBottom="0dp"
+                        android:minWidth="0dp" android:paddingStart="24dp" android:paddingEnd="24dp"
+                        android:text="Save" android:textSize="14sp" app:cornerRadius="10dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Start/Stop Buttons -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnStart"
                 android:layout_width="match_parent" android:layout_height="52dp"
@@ -214,8 +232,7 @@
                     android:layout_width="wrap_content" android:layout_height="36dp"
                     android:insetTop="0dp" android:insetBottom="0dp" android:minWidth="0dp"
                     android:text="Clear" android:textSize="12sp"
-                    app:backgroundTint="@color/red_light"
-                    app:cornerRadius="8dp" />
+                    app:backgroundTint="@color/red_light" app:cornerRadius="8dp" />
             </LinearLayout>
 
             <TextView android:id="@+id/tvEmptyLog"
@@ -229,6 +246,7 @@
                 android:nestedScrollingEnabled="false" />
 
             <View android:layout_width="match_parent" android:layout_height="24dp" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

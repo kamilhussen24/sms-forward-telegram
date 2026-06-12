@@ -37,7 +37,18 @@ object SmsQueue {
         val chatId = Prefs.getChatId(context)
         if (token.isEmpty() || chatId.isEmpty()) return
 
-        val otp = Regex("\\b\\d{4,8}\\b").find(item.body)?.value
+        // Smart OTP detection — look near OTP keywords first
+        val otp = Regex("(?i)(?:otp|code|pin|passcode|password|token|verification)[\\s:=]+([0-9]{4,8})")
+            .find(item.body)?.groupValues?.getOrNull(1)
+            ?: Regex("(?i)([0-9]{4,8})(?:\\s*(?:is|was|:)\\s*(?:your|the)\\s*(?:otp|code|pin))")
+                .find(item.body)?.groupValues?.getOrNull(1)
+            ?: run {
+                // Fallback: only if message contains OTP-related words
+                val hasOtpWord = Regex("(?i)(otp|one.time|verify|verification|code|pin)")
+                    .containsMatchIn(item.body)
+                if (hasOtpWord) Regex("\\b([0-9]{4,8})\\b").find(item.body)?.groupValues?.getOrNull(1)
+                else null
+            }
         val now = Date()
         val time = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now)
         val date = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(now)
